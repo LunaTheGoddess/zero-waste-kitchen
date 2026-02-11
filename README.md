@@ -22,9 +22,4 @@ Home cooks, students, families, and anyone who wants to waste less food and cook
 
 ---
 
-## 📬 Contact
-hello@zerowastekitchen.com  
-
----
-
 Made with care for home cooks everywhere 💚
