@@ -22,7 +22,7 @@ export function SharePantryDialog({ isOpen, onClose }: SharePantryDialogProps) {
 
   const handleSendRequest = async () => {
     if (!username.trim()) {
-      toast.error("Please enter an username");
+      toast.error("Please enter a username");
       return;
     }
 
