@@ -25,6 +25,7 @@ interface IngredientCardProps {
   onEdit: (ingredient: Ingredient) => void;
   onDelete: (id: string) => void;
   index: number;
+  isEditable?: boolean;
 }
 
 const categoryColors: Record<string, string> = {
@@ -47,7 +48,7 @@ const categoryIcons: Record<string, LucideIcon> = {
   "Other": Box,
 };
 
-export function IngredientCard({ ingredient, onEdit, onDelete, index }: IngredientCardProps) {
+export function IngredientCard({ ingredient, onEdit, onDelete, index, isEditable = true }: IngredientCardProps) {
   const isLowStock = ingredient.quantity <= 2;
   const isExpiringSoon = ingredient.expiryDate && 
     new Date(ingredient.expiryDate) <= new Date(Date.now() + 3 * 24 * 60 * 60 * 1000);
@@ -59,7 +60,7 @@ export function IngredientCard({ ingredient, onEdit, onDelete, index }: Ingredie
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      transition={{ delay: index * 0.05 }}
+      transition={{ delay: index * 0.02 }}
       className={cn(
         "group relative bg-card rounded-xl p-4 border border-border",
         "shadow-soft hover:shadow-card transition-all duration-300",
@@ -126,30 +127,32 @@ export function IngredientCard({ ingredient, onEdit, onDelete, index }: Ingredie
         </div>
 
         {/* Actions Menu */}
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-foreground flex-shrink-0"
-            >
-              <MoreVertical className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-32">
-            <DropdownMenuItem onClick={() => onEdit(ingredient)} className="cursor-pointer">
-              <Edit2 className="h-4 w-4 mr-2" />
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem 
-              onClick={() => onDelete(ingredient.id)} 
-              className="cursor-pointer text-destructive focus:text-destructive"
-            >
-              <Trash2 className="h-4 w-4 mr-2" />
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
+        {isEditable && (
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-muted-foreground hover:text-foreground flex-shrink-0"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-32">
+              <DropdownMenuItem onClick={() => onEdit(ingredient)} className="cursor-pointer">
+                <Edit2 className="h-4 w-4 mr-2" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem 
+                onClick={() => onDelete(ingredient.id)} 
+                className="cursor-pointer text-destructive focus:text-destructive"
+              >
+                <Trash2 className="h-4 w-4 mr-2" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        )}
       </div>
     </motion.div>
   );
