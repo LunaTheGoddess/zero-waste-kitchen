@@ -35,12 +35,16 @@ const personalIngredients: ExtendedIngredient[] = [
 ];
 
 // Mock shared ingredients from other users
-const sharedIngredients: ExtendedIngredient[] = [
-  { id: "s1", name: "Salmon", quantity: 2, unit: "lb", category: "Meat", isShared: true, sharedBy: "John Smith" },
-  { id: "s2", name: "Avocados", quantity: 4, unit: "pcs", category: "Vegetables", isShared: true, sharedBy: "John Smith" },
-  { id: "s3", name: "Greek Yogurt", quantity: 500, unit: "g", category: "Dairy", isShared: true, sharedBy: "Sarah Johnson" },
-  { id: "s4", name: "Honey", quantity: 250, unit: "ml", category: "Other", isShared: true, sharedBy: "Sarah Johnson" },
-];
+const sharedPantriesByOwner: Record<string, ExtendedIngredient[]> = {
+  "john-smith": [
+    { id: "s1", name: "Salmon", quantity: 2, unit: "lb", category: "Meat", isShared: true, sharedBy: "John Smith" },
+    { id: "s2", name: "Avocados", quantity: 4, unit: "pcs", category: "Vegetables", isShared: true, sharedBy: "John Smith" },
+  ],
+  "sarah-johnson": [
+    { id: "s3", name: "Greek Yogurt", quantity: 500, unit: "g", category: "Dairy", isShared: true, sharedBy: "Sarah Johnson" },
+    { id: "s4", name: "Honey", quantity: 250, unit: "ml", category: "Other", isShared: true, sharedBy: "Sarah Johnson" },
+  ],
+};
 
 const categories = ["All", "Vegetables", "Fruits", "Dairy", "Meat", "Grains", "Spices", "Other"];
 
@@ -49,16 +53,17 @@ export default function Dashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("All");
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [showSharedPantry, setShowSharedPantry] = useState(false);
+  const [selectedPantry, setSelectedPantry] = useState<string>("my-pantry");
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
+  const hasSharedPantries = Object.keys(sharedPantriesByOwner).length > 0;
 
   const displayIngredients = useMemo(() => {
-    if (showSharedPantry) {
-      return sharedIngredients;
+    if (selectedPantry === "my-pantry") {
+      return ingredients;
     }
-    return ingredients;
-  }, [ingredients, showSharedPantry]);
+    return sharedPantriesByOwner[selectedPantry] || [];
+  }, [ingredients, selectedPantry]);
 
   const filteredIngredients = useMemo(() => {
     return displayIngredients.filter((ingredient) => {
@@ -87,9 +92,7 @@ export default function Dashboard() {
   };
 
   const handleEdit = (ingredient: Ingredient) => {
-    // Only allow editing personal ingredients
-    const extendedIngredient = ingredient as ExtendedIngredient;
-    if (extendedIngredient.isShared) return;
+    if (selectedPantry !== "my-pantry") return;
     setEditingIngredient(ingredient);
     setIsModalOpen(true);
   };
@@ -113,6 +116,8 @@ export default function Dashboard() {
     return { total, lowStock, expiringSoon };
   }, [ingredients]);
 
+  const isViewingOwnPantry = selectedPantry === "my-pantry";
+
   return (
     <div className="max-w-6xl mx-auto">
       {/* Header */}
@@ -122,10 +127,12 @@ export default function Dashboard() {
           animate={{ opacity: 1, y: 0 }}
           className="font-serif text-3xl md:text-4xl font-bold text-foreground mb-2"
         >
-          My Ingredients
-        </motion.h1>
-        <p className="text-muted-foreground">
-          Manage your pantry and keep track of what you have.
+          {isViewingOwnPantry ? "My Pantry" : `${selectedPantry === "john-smith" ? "John Smith's" : "Sarah Johnson's"} Pantry`}
+          </motion.h1>
+          <p className="text-muted-foreground">
+            {isViewingOwnPantry 
+              ? "Manage your pantry and keep track of what you have." 
+              : ""}
         </p>
       </div>
 
@@ -193,21 +200,35 @@ export default function Dashboard() {
 
         {/* Bottom Row: Shared Pantry Toggle (left) + Layout/Add buttons (right) */}
         <div className="flex flex-wrap items-center justify-between gap-3">
-          {/* Shared Pantry Toggle */}
-          <div className="flex items-center gap-2 px-3 py-2 rounded-lg border border-border bg-card">
-            <Users className="h-4 w-4 text-muted-foreground" />
-            <Label htmlFor="shared-toggle" className="text-sm font-medium cursor-pointer">
-              Shared Pantry
-            </Label>
-            <Switch
-              id="shared-toggle"
-              checked={showSharedPantry}
-              onCheckedChange={setShowSharedPantry}
-            />
-          </div>
+          {/* Pantry Selector Dropdown */}
+          {hasSharedPantries && (
+            <Select value={selectedPantry} onValueChange={setSelectedPantry}>
+              <SelectTrigger className="w-auto justify-center justify-between px-4">
+                <Users className="h-4 w-4 mr-2" />
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="my-pantry">
+                  <span className="font-medium">My Pantry</span>
+                </SelectItem>
+                <SelectItem value="john-smith">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-blue-500" />
+                    <span>John Smith's Pantry</span>
+                  </div>
+                </SelectItem>
+                <SelectItem value="sarah-johnson">
+                  <div className="flex items-center gap-2">
+                    <div className="h-2 w-2 rounded-full bg-purple-500" />
+                    <span>Sarah Johnson's Pantry</span>
+                  </div>
+                </SelectItem>
+              </SelectContent>
+            </Select>
+          )}
 
           {/* Right side: Layout switch + Add button */}
-          <div className="flex items-center gap-3">
+          <div className={cn("flex items-center gap-3", hasSharedPantries ? "sm:w-auto justify-end" : "justify-end")}>
             <div className="flex rounded-lg border border-border overflow-hidden">
               <Button
                 variant={viewMode === "grid" ? "secondary" : "ghost"}
@@ -227,7 +248,7 @@ export default function Dashboard() {
               </Button>
             </div>
 
-            {!showSharedPantry && (
+            {isViewingOwnPantry && (
               <Button variant="hero" onClick={handleOpenModal}>
                 <Plus className="h-4 w-4" />
                 <span className="hidden sm:inline">Add Ingredient</span>
@@ -238,22 +259,28 @@ export default function Dashboard() {
       </motion.div>
 
       {/* Ingredients Grid/List */}
-      <div
-        className={cn(
-          viewMode === "grid"
-            ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
-            : "space-y-3"
-        )}
-      >
-        <AnimatePresence mode="popLayout">
+      <AnimatePresence mode="popLayout">
+        <motion.div
+          key={selectedPantry} 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.2 }}
+          className={cn(
+            viewMode === "grid"
+              ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4"
+              : "space-y-3"
+          )}
+        >
           {filteredIngredients.length > 0 ? (
             filteredIngredients.map((ingredient, index) => (
               <IngredientCard
-                key={ingredient.id}
+                key={`${selectedPantry}-${ingredient.id}`}
                 ingredient={ingredient}
                 onEdit={handleEdit}
                 onDelete={handleDelete}
                 index={index}
+                isEditable={isViewingOwnPantry}
               />
             ))
           ) : (
@@ -273,14 +300,16 @@ export default function Dashboard() {
                   ? "Try adjusting your filters"
                   : "Start adding ingredients to your pantry"}
               </p>
-              <Button variant="hero" onClick={handleOpenModal}>
-                <Plus className="h-4 w-4" />
-                Add Your First Ingredient
-              </Button>
+              {isViewingOwnPantry && (
+                <Button variant="hero" onClick={handleOpenModal}>
+                  <Plus className="h-4 w-4" />
+                  Add Your First Ingredient
+                </Button>
+              )}
             </motion.div>
           )}
-        </AnimatePresence>
-      </div>
+        </motion.div>
+      </AnimatePresence>
 
       {/* Modal */}
       <IngredientModal
